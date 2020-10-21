@@ -1,0 +1,60 @@
+---
+guacamole_server_version: 1.0.0
+guacamole_client_version: 1.0.0
+guacamole_auth_ldap_version: 1.0.0
+guacamole_auth_jdbc_version: 1.0.0
+guacamole_duo_version:  1.0.0
+guacamole_mfa_required: false
+
+
+#nginx configuration
+guacamole_nginx_server_name: rdp.jjames.in
+
+#mysql credentials
+mysql_db_name: guacamole_db
+mysql_db_user: guacamole_user
+
+ldap_host_name: ""
+ldap-config-base-dn: []
+ldap-user-search-filter: []
+ldap_base_dn: ""
+
+guacamole_packages: [
+    'libcairo2-dev',
+    'libcairo2-dev',
+    'libjpeg-turbo8-dev',
+    'libpng-dev',
+    'libossp-uuid-dev',
+    'libavcodec-dev', 
+    'libavutil-dev',
+    'libswscale-dev',
+    'libfreerdp-dev',
+    'libpango1.0-dev',
+    'libssh2-1-dev',
+    'libvncserver-dev',
+    'libssl-dev',
+    'libvorbis-dev',
+    'libwebp-dev',
+    'tomcat8',
+    'tomcat8-admin',
+    'tomcat8-common',
+    'tomcat8-user' ]
+
+guacamole_server_url: "https://mirrors.estointernet.in/apache/guacamole/{{ guacamole_server_version }}/source/guacamole-server-{{ guacamole_server_version }}.tar.gz"
+guacamole_server_path: "/tmp/guacamole-serve/"
+
+guacamole_client_url: "https://archive.apache.org/dist/guacamole/{{ guacamole_client_version }}/binary/guacamole-{{ guacamole_client_version }}.war"
+guacamole_client_path: "/var/lib/tomcat8/webapps/"
+
+guacamole_ldap_url: "https://mirrors.estointernet.in/apache/guacamole/{{ guacamole_auth_ldap_version }}/binary/guacamole-auth-ldap-{{ guacamole_auth_ldap_version }}.tar.gz"
+guacamole_jdbc_url: "https://mirrors.estointernet.in/apache/guacamole/{{ guacamole_auth_jdbc_version }}/binary/guacamole-auth-jdbc-{{ guacamole_auth_jdbc_version }}.tar.gz"
+guacamole_jdbc_deb: "https://cdn.mysql.com//Downloads/Connector-J/mysql-connector-java_8.0.18-1ubuntu18.04_all.deb"
+
+guacamole_duo_url: "https://archive.apache.org/dist/guacamole/{{ guacamole_duo_version }}/binary/guacamole-auth-duo-{{ guacamole_duo_version }}.tar.gz"
+# guacamole_config_path: /etc/guacamole/
+guacamole_extension_path: /etc/guacamole/extensions/
+# guacamole_lib_path: /etc/guacamole/lib/
+
+guacamole_directories: ['/etc/guacamole', '/etc/guacamole/extensions', '/etc/guacamole/lib']
+
+gucamole_nginx_packages: ['nginx' ]

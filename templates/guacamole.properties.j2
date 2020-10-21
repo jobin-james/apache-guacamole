@@ -1,0 +1,31 @@
+guacd-hostname: localhost
+guacd-port: 4822
+
+#LDAP connection properties
+ldap-hostname: {{ ldap_host_name }}
+ldap-port: 3268
+ldap-username-attribute: sAMAccountName
+ldap-encryption-method: none
+
+ldap-search-bind-dn: {{ ldap_search_bind_user }}
+ldap-search-bind-password: {{ ldap_search_bind_password }}
+ldap-config-base-dn: {{ ldap_config_base_dn }}
+ldap-user-base-dn: {{ldap_base_dn }}
+ldap-user-search-filter: {{ ldap_user_search_filter }}
+ldap-max-search-results: 4000
+
+#Mysql Properties
+mysql-hostname: localhost
+mysql-port: 3306
+mysql-database: {{ mysql_db_name }}
+mysql-username: {{ mysql_db_user }}
+mysql-password: {{ mysql_db_password }}
+
+#guacadmin
+
+{% if guacamole_mfa_required %}
+duo-api-hostname: {{ duo-api-hostname }}
+duo-integration-key: {{ duo-integration-key }}
+duo-secret-key: {{ duo-secret-key }}
+duo-application-key: {{ duo-application-key }}
+{% endif %}

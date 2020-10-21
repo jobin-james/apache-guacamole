@@ -1,0 +1,26 @@
+---
+- name: Install Nginx reverse proxy
+  apt:
+    name: "{{ gucamole_nginx_packages }}"
+    state: latest
+
+- name: Copy the SSL certificates
+  copy:
+    src: "{{ item }}"
+    dest: /etc/ssl/
+  with_items:
+    - cert.crt
+    - key.key
+
+- name: Copy the configuration to nginx server
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/sites-available/gucamole.conf
+  notify: restart nginx
+
+- name: create symlink
+  file:
+    src: /etc/nginx/sites-available/gucamole.conf
+    dest: /etc/nginx/sites-enabled/gucamole.conf
+    state: link
+  notify: restart nginx

@@ -1,0 +1,147 @@
+---
+- name: Create Build folder
+  file:
+    path: /tmp/guacamole
+    state: directory
+  register:  tmp_folder
+
+- name: Create guacamole-server directories
+  file:
+    path: "{{ item }}"
+    recurse: yes
+    state: directory
+  with_items: "{{ guacamole_directories }}"
+
+- name: Install Dependencies
+  apt:
+    name: "{{ guacamole_packages }}"
+    state: present
+    update_cache: yes
+
+- name: Download Server Binary
+  get_url:
+    url: "{{ guacamole_server_url }}"
+    dest: "{{ tmp_folder.path }}"
+
+- name: Download Client war file
+  get_url:
+    url: "{{ guacamole_client_url }}"
+    dest: '{{ guacamole_client_path }}/guacamole.war'
+  notify: restart tomcat
+
+- name: Extract the guacamole-server
+  unarchive:
+    src: '{{tmp_folder.path}}/guacamole-server-{{ guacamole_server_version }}.tar.gz'
+    dest: "{{ tmp_folder.path }}"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Run Configure 
+  command:
+    cmd: ./configure --with-init-dir=/etc/init.d
+  args:
+    chdir: "{{ tmp_folder.path }}"
+
+- name: Run Make
+  make:
+    chdir: "{{ tmp_folder.path }}"
+
+- name: Run Make Install
+  make:
+    chdir: "{{ tmp_folder.path }}"
+    target: install
+  notify: restart guacd
+
+- name: Download the Ldap plugin
+  get_url: 
+    url: "{{ guacamole_ldap_url }}"
+    dest: "{{ tmp_folder.path }}"
+  
+- name: Extract the guacamole auth-ldap extension   
+  unarchive:
+    src: '{{ tmp_folder.path }}/guacamole-auth-ldap-{{ guacamole_auth_ldap_version }}.tar.gz'
+    dest: "{{ guacamole_extension_path }}"
+    remote_src: yes
+    extra_opts: [--strip-components=1]
+
+- name: Download the jdbc plugin
+  get_url: 
+    url: "{{ guacamole_jdbc_url }}"
+    dest: "{{ tmp_folder.path }}"
+  
+
+- name: Extract the jdbc plugin
+  unarchive:
+    src: '{{ tmp_folder.path }}/guacamole-auth-jdbc-{{ guacamole_auth_jdbc_version }}.tar.gz'
+    dest: "{{ tmp_folder.path }}"
+    remote_src: yes
+    # extra_opts: [--strip-components=1]
+  
+- name: Copy JDBC module to extension directory
+  copy:
+    src: '{{ tmp_folder.path }}/guacamole-auth-jdbc-{{ guacamole_auth_jdbc_version }}/mysql/guacamole-auth-jdbc-mysql-{{ guacamole_auth_jdbc_version }}.jar'
+    dest: "{{ guacamole_extension_path }}"
+    remote_src: yes
+- name: Configure Duo mfa plugin
+  block:
+    - name: Download the Duo plugin
+      get_url: 
+        url: "{{ guacamole_duo_url }}"
+        dest: "{{ tmp_folder.path }}"
+
+    - name: Extract  the Duo plugin
+      unarchive:
+        src: '{{ tmp_folder.path }}/{{ guacamole_duo_version }}.tar.gz'
+        dest: "{{ tmp_folder.path }}"
+        remote_src: yes
+
+    - name: Copy Duo module to extension directory
+      copy:
+        src: '{{ tmp_folder.path }}/{{ guacamole_duo_version }}/{{ guacamole_duo_version }}.jar'
+        dest: "{{ guacamole_extension_path }}"
+        remote_src: yes
+      notify: restart tomcat
+  when: guacamole_mfa_required
+  
+- name: Download the mysql connector
+  get_url:
+    url: "{{ guacamole_jdbc_deb }}"
+    dest: "{{ tmp_folder.path }}"
+  
+- name: install Mysql connector
+  apt:
+    deb: '{{ tmp_folder.path }}/mysql-connector-java_8.0.18-1ubuntu18.04_all.deb'
+  
+- name: create a link to guacamole lib folder
+  file:
+    src: /usr/share/java/mysql-connector-java-8.0.18.jar
+    dest: /etc/guacamole/lib/mysql-connector-java-8.0.18.jar
+    state: link
+
+- name: Copy the configuration file
+  template:
+    src: guacamole.properties.j2
+    dest: /etc/guacamole/guacamole.properties
+
+- name: Add a line to a file if the file does not exist, without passing regexp
+  lineinfile:
+    path: /etc/default/tomcat8
+    line: GUACAMOLE_HOME=/etc/guacamole
+
+- name: create a link of Guacamole path to tomcat root
+  file: 
+    src: /etc/guacamole
+    dest: /usr/share/tomcat8/.guacamole
+    state: link
+
+- name: Restore default Database Schema
+  mysql_db:
+    state: import
+    name: guacamole_db
+    target: '{{ tmp_folder.path }}/{{ guacamole_auth_jdbc_version }}/mysql/schema/{{item}}.sql'
+  with_items:
+    - 001-create-schema
+    - 002-create-admin-user
+
+  ignore_errors: yes
+- import_tasks: nginx.yml
